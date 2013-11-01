@@ -95,21 +95,40 @@ import os
 import sys
 
 from grass.script import core as gcore
-from grass.pygrass.modules import Module
 
 
-def map_extent_to_js_leaflet_list(extent):
-    """extent dictionary with latitudes and longitudes extent (east, north, west, south)"""
-    return "[[{south}, {east}], [{north}, {west}]]".format(**extent)
+# TODO: put this to grass.utils
+def add_pythonlib_to_path(name):
+    libpath = None
+    # this is specified by Makefile
+    if os.path.isdir(os.path.join(os.getenv('GISBASE'), 'etc', name)):
+        libpath = os.path.join(os.getenv('GISBASE'), 'etc', name)
+    elif os.getenv('GRASS_ADDON_BASE') and \
+            os.path.isdir(os.path.join(os.getenv('GRASS_ADDON_BASE'), 'etc',
+                                       name)):
+        libpath = os.path.join(os.getenv('GRASS_ADDON_BASE'), 'etc', name)
+    # this is the directory name
+    elif os.path.join(os.path.dirname(__file__), '..', name):
+        libpath = os.path.join(os.path.dirname(__file__), '..')
+    # maybe this should be removed because it is useless
+    elif os.path.isdir(os.path.join('..', name)):
+        libpath = os.path.join('..', name)
+    else:
+        gcore.fatal(_("Python library '%s' not found. Probably it was not"
+                      "intalled correctly.") % name)
 
+    sys.path.append(libpath)
 
-def get_map_extent_for_file(file_name):
-    wgs84_file = open(file_name, 'r')
-    enws = wgs84_file.readlines()
-    elon, nlat = enws[0].strip().split(' ')
-    wlon, slat = enws[1].strip().split(' ')
-    return {'east': elon, 'north': nlat,
-            'west': wlon, 'south': slat}
+add_pythonlib_to_path('routleaflet')
+
+# maybe this would be the same without try-except
+# TODO: ask about the best practice on ML
+try:
+    from routleaflet import get_map_extent_for_file, \
+        map_extent_to_js_leaflet_list, export_png_in_projection
+except ImportError, error:
+    gcore.fatal(_("Cannot import from routleaflet: ") + str(error)
+                + _("\nThe search path (sys.path) is: ") + str(sys.path))
 
 
 def main():
@@ -127,7 +146,7 @@ def main():
                       " instead of raster option."))
     if options['raster']:
         if ',' in options['raster']:
-            maps = options['raster'].split(',') #TODO: skip empty parts
+            maps = options['raster'].split(',')  # TODO: skip empty parts
         else:
             maps = [options['raster']]
     elif options['strds']:
@@ -192,11 +211,13 @@ def main():
     # our flag n is inversion of r.out.png.proj's t flag
     # (transparent NULLs are better for overlay)
     # we always need the l flag (ll .wgs84 file)
-    routpngproj_flags = 'l'
+    routpng_flags = ''
     if not flags['n']:
-        routpngproj_flags += 't'
+        routpng_flags += 't'
     if flags['w']:
-        routpngproj_flags += 'w'
+        routpng_flags += 'w'
+    # r.out.png.proj l flag for LL .wgs84 file is now function parameter
+    # and is specified bellow
 
     # hard coded file names
     data_file_name = 'data_file.csv'
@@ -209,24 +230,34 @@ def main():
     js_data_file.write('var layerInfos = [\n')
 
     for i, map_name in enumerate(maps):
-        routpng = Module('r.out.png.proj')
         if '@' in map_name:
             pure_map_name = map_name.split('@')[0]
         else:
             pure_map_name = map_name
+        # TODO: mixing current and maps mapset at this point
+        if '@' in map_name:
+            map_name, src_mapset_name = map_name.split('@')
+        else:
+            # TODO: maybe mapset is mandatory for those out of current mapset?
+            src_mapset_name = ''
         image_file_name = pure_map_name + '.png'
         image_file_path = os.path.join(out_dir, image_file_name)
-        routpng(input=map_name,
-                output=image_file_path,
-                epsg=epsg,
-                compression=compression,
-                flags=routpngproj_flags)
+        # TODO: skip writing to file and extract the information from
+        # function, or use object if function is so large
+        wgs84_file = image_file_path + '.wgs84'
+        export_png_in_projection(map_name=map_name,
+                                 src_mapset_name=src_mapset_name,
+                                 output_file=image_file_path,
+                                 epsg_code=epsg,
+                                 compression=compression,
+                                 routpng_flags=routpng_flags,
+                                 wgs84_file=wgs84_file)
 
         data_file.write(pure_map_name + ',' + image_file_name + '\n')
 
         # it doesn't matter in which location we are, it just uses the current
         # location, not tested for LL loc, assuming that to be nop.
-        map_extent = get_map_extent_for_file(image_file_path + '.wgs84')
+        map_extent = get_map_extent_for_file(wgs84_file)
         bounds = map_extent_to_js_leaflet_list(map_extent)
 
         # http://www.w3schools.com/js/js_objects.asp
