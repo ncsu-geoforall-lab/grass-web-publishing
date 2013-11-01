@@ -1,0 +1,44 @@
+<h2>DESCRIPTION</h2>
+
+<em><b>r.out.png.proj</b></em>
+
+<h2>NOTES</h2>
+
+<p>
+The module work only for projection available through EPSG code.
+
+<p>
+This module uses <em><a href="r.out.png.html">r.out.png</a></em> for PNG
+export, <em><a href="r.proj.html">r.proj</a></em> for raster map reprojection
+and creates temporary location using <em><a href="g.proj.html">g.proj</a></em>.
+WGS84 longitude and latitude are computed from the map extent in temporary
+location using <em><a href="m.proj.html">m.proj</a></em> module.
+
+<p>
+The world file (<em>-w</em> flag, <tt>.wld</tt> file extension) is outputted by
+<em><a href="r.out.png.html">r.out.png</a></em> while the LL WGS84 file
+(<em>-l, <tt>.wgs84</tt> file extension)
+which contains map extent in WGS84 longitude and latitude.
+Both file name extensions are added to the file name of the image.
+
+<h2>EXAMPLE</h2>
+
+<div class="code"><pre>
+
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.out.png.html">r.out.png</a>
+</em>
+
+
+<h2>REFERENCES</h2>
+
+
+<h2>AUTHORS</h2>
+
+Vaclav Petras, <a href="http://gis.ncsu.edu/osgeorel/">NCSU OSGeoREL</a>
+
+<p><i>Last changed: $Date: 2013-07-31 13:45:15 -0400 (Wed, 31 Jul 2013) $</i>

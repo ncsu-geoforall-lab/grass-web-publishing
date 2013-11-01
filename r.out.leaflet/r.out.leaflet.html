@@ -1,0 +1,50 @@
+<h2>DESCRIPTION</h2>
+
+<em><b>r.out.png.leaflet</b></em>
+
+Maps are prepered to be overlays on some map layer such as OpenStreetMap.
+
+Outputs:
+<ul>
+<li>PNG images in Spherical Mercator (aka Mercator or Google Mercator)
+projection (EPSG:3857)</li>
+<li>JS file with JavaScript list variable initialized by object literals
+contaning all data about the map and images</li>
+<li>CSV file contaning the same data as JS file (not completed yet)</li>
+</ul>
+
+<h2>NOTES</h2>
+
+<p>
+This module uses <em><a href="r.out.png.proj.html">r.out.png.proj</a></em> to
+export PNG images in the Spherical Mercator projection (EPSG:3857).
+
+<p>
+Image geographic bounds are extracted from <tt>.wgs84</tt> file produced by 
+<em><a href="r.out.png.proj.html">r.out.png.proj</a></em> module.
+
+<h2>EXAMPLE</h2>
+
+<div class="code"><pre>
+
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.out.png.html">r.out.png</a>
+</em>
+
+
+<h2>REFERENCES</h2>
+
+<ul>
+<li><a href="http://leafletjs.com/">Leaflet</a> JavaScript library for interactive maps</li>
+<li><a <a href="http://switch2osm.org/using-tiles/getting-started-with-leaflet/">Switch2OSM: Getting started with Leaflet</a></li>
+</ul>
+
+<h2>AUTHORS</h2>
+
+Vaclav Petras, <a href="http://gis.ncsu.edu/osgeorel/">NCSU OSGeoREL</a>
+
+<p><i>Last changed: $Date: 2013-07-31 13:45:15 -0400 (Wed, 31 Jul 2013) $</i>
