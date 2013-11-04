@@ -108,6 +108,7 @@ def add_pythonlib_to_path(name):
                                        name)):
         libpath = os.path.join(os.getenv('GRASS_ADDON_BASE'), 'etc', name)
     # this is the directory name
+    # possibly use os.path.realpath('..') here
     elif os.path.join(os.path.dirname(__file__), '..', name):
         libpath = os.path.join(os.path.dirname(__file__), '..')
     # maybe this should be removed because it is useless
