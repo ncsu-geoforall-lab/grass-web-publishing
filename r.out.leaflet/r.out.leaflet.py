@@ -172,7 +172,7 @@ def main():
         dbiface.connect()
 
         # the query
-        rows = ds.get_registered_maps(columns='id', where=where)
+        rows = ds.get_registered_maps(columns='id', where=where, order='start_time')
         if not rows:
             gcore.fatal(_("Cannot get any maps for spatio-temporal raster"
                           " dataset <%s>."
