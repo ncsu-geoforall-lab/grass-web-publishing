@@ -44,7 +44,7 @@
 #%option G_OPT_M_DIR
 #% key: output
 #% label: Output directory
-#% description: Directory must exists and should be empty but this is not checked by the script. Some parts may fail is the files will be in the directory. Overwrite is not implemented yet.
+#% description: Directory must exists and should be empty but this is not checked by the script. Some parts may fail if the files will be in the directory. Overwrite is not implemented yet.
 #% guisection: Output
 #%end
 #%option
@@ -65,6 +65,15 @@
 #% multiple: yes
 #% options: 0-1
 #% answer: 1
+#%end
+#%option
+#% key: info
+#% type: string
+#% label: Additional information to be exported
+#% description: Specifies which information about maps should be exported
+#% required: no
+#% multiple: yes
+#% options: histogram, pie-histogram, statistics, thumbnail, geotiff, packed-map
 #%end
 #%option
 #% key: compression
@@ -125,11 +134,83 @@ add_pythonlib_to_path('routleaflet')
 # maybe this would be the same without try-except
 # TODO: ask about the best practice on ML
 try:
-    from routleaflet import get_map_extent_for_file, \
+    from routleaflet.pngproj import get_map_extent_for_file, \
         map_extent_to_js_leaflet_list, export_png_in_projection
+    import routleaflet.outputs as loutputs
 except ImportError, error:
     gcore.fatal(_("Cannot import from routleaflet: ") + str(error)
                 + _("\nThe search path (sys.path) is: ") + str(sys.path))
+
+
+def ensure_dir(f):
+    d = os.path.dirname(f)
+    if not os.path.exists(d):
+        os.makedirs(d)
+
+
+def escape_endlines(text):
+    return text.replace('\n', '\\n')
+
+
+def generate_infos(map_name, projected_png_file, output_directory,
+                   required_infos, attributes):
+    histogram_width = 500
+    histogram_height = 500
+    if 'histogram' in required_infos:
+        file_name = map_name + '.png'
+        file_path = os.path.join(output_directory, 'histograms',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.export_histogram(map_name, file_path,
+                                  width=histogram_width,
+                                  height=histogram_height)
+        attributes.append(('histogram', file_name))
+
+    if 'pie-histogram' in required_infos:
+        file_name = map_name + '.png'
+        file_path = os.path.join(output_directory, 'pie-histograms',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.export_histogram(map_name, file_path,
+                                  width=histogram_width,
+                                  height=histogram_height,
+                                  style='pie')
+        attributes.append(('piehistogram', file_name))
+
+    if 'statistics' in required_infos:
+        file_name = map_name + '.txt'
+        file_path = os.path.join(output_directory, 'statistics',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.export_statistics(map_name, file_path)
+        attributes.append(('statisticsfile', file_name))
+        with open(file_path, 'r') as data_file:
+            content = data_file.read()
+            attributes.append(('statistics', content))
+
+    if 'thumbnail' in required_infos:
+        file_name = map_name + '.png'
+        file_path = os.path.join(output_directory, 'thumbnails',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.thumbnail_image(projected_png_file, file_path)
+        attributes.append(('thumbnail', file_name))
+
+    if 'geotiff' in required_infos:
+        file_name = map_name + '.tif'  # r.out.tiff always uses this extension
+        file_path = os.path.join(output_directory, 'geotiffs',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.export_raster_as_geotiff(map_name, file_path)
+        attributes.append(('geotiff', file_name))
+
+    if 'packed-map' in required_infos:
+        file_name = map_name + '.pack'
+        file_path = os.path.join(output_directory, 'packed-maps',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.export_raster_packed(map_name, file_path)
+        attributes.append(('packedmap', file_name))
 
 
 def main():
@@ -206,6 +287,11 @@ def main():
     else:
         opacities = [float(options['opacity'])] * num_maps
 
+    if ',' in options['info']:
+        infos = options['info'].split(',')
+    else:
+        infos = [options['info']]
+
     # r.out.png options
     compression = int(options['compression'])
     # flag w is passed to r.out.png.proj
@@ -261,13 +347,26 @@ def main():
         map_extent = get_map_extent_for_file(wgs84_file)
         bounds = map_extent_to_js_leaflet_list(map_extent)
 
+        extra_attributes = []
+
+        generate_infos(map_name=map_name,
+                       projected_png_file=image_file_path,
+                       required_infos=infos,
+                       output_directory=out_dir,
+                       attributes=extra_attributes)
         # http://www.w3schools.com/js/js_objects.asp
         js_data_file.write("""   {{title: "{title}", file: "{file_}","""
-                           """ bounds: {bounds}, opacity: {opacity}}}\n"""
+                           """ bounds: {bounds}, opacity: {opacity}"""
                            .format(title=pure_map_name,
                                    file_=image_file_name,
                                    bounds=bounds,
                                    opacity=opacities[i]))
+        if extra_attributes:
+            extra_js_attributes = [pair[0] + ': "' +
+                                   escape_endlines(pair[1]) + '"'
+                                   for pair in extra_attributes]
+            js_data_file.write(', ' + ', '.join(extra_js_attributes))
+        js_data_file.write("""}\n""")
         # do not write after the last item
         if i < num_maps - 1:
             js_data_file.write(',')

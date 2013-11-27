@@ -97,7 +97,7 @@ add_pythonlib_to_path('routleaflet')
 # the previous setting of the path, considering the fact that it will be never
 # 100% sure, the try-except has the reason
 try:
-    from routleaflet import export_png_in_projection
+    from routleaflet.pngproj import export_png_in_projection
 except ImportError, error:
     gcore.fatal(_("Cannot import from routleaflet: ") + str(error)
                 + _("\nThe search path (sys.path) is: ") + str(sys.path))
