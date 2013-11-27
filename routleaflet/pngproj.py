@@ -10,7 +10,6 @@ import tempfile
 
 from grass.script import core as gcore
 from grass.script import setup as gsetup
-from grass.pygrass.modules import Module
 from grass.pygrass.gis import Mapset, Location
 
 
@@ -120,14 +119,12 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         a = gcore.parse_key_val(rproj_out, sep='=', vsep=' ')
         gcore.run_command('g.region', **a)
         # map import
-        r_proj = Module('r.proj')
-        r_proj(input=map_name, dbase=src_mapset.gisdbase,
+        gcore.run_command('r.proj', input=map_name, dbase=src_mapset.gisdbase,
                location=src_mapset.location, mapset=src_mapset.name,
                output=map_name)
 
         # actual work here
-        r_out_png = Module('r.out.png')
-        r_out_png(input=map_name, output=output_file, compression=compression,
+        gcore.run_command('r.out.png', input=map_name, output=output_file, compression=compression,
                   flags=routpng_flags)
 
         if wgs84_file:
