@@ -85,6 +85,11 @@
 #% options: 0-9
 #%end
 #%flag
+#% key: m
+#% label: Use map extent instead of current region
+#% description: Instead of current region, each map extent will be used for export map and additional information. This can be advantage for map extents, zooming to map layers and exported images but it can be confusing when comparing map histograms or map staticstics.
+#%end
+#%flag
 #% key: n
 #% label: Do not make NULL cells transparent
 #% description: When map is overlay NULL cells should be transparent. However, note that r.out.png does not make NULL cells transparent by default.
@@ -306,6 +311,13 @@ def main():
     # r.out.png.proj l flag for LL .wgs84 file is now function parameter
     # and is specified bellow
 
+    if flags['m']:
+        use_region = False
+        # we will use map extent
+        gcore.use_temp_region()
+    else:
+        use_region = True
+
     # hard coded file names
     data_file_name = 'data_file.csv'
     js_data_file_name = 'data_file.js'
@@ -317,11 +329,15 @@ def main():
     js_data_file.write('var layerInfos = [\n')
 
     for i, map_name in enumerate(maps):
+        if not use_region:
+            if gcore.run_command('g.region', rast=map_name):
+                raise RuntimeError("Cannot set region from map <%s>."
+                                   % map_name)
         if '@' in map_name:
             pure_map_name = map_name.split('@')[0]
         else:
             pure_map_name = map_name
-        # TODO: mixing current and maps mapset at this point
+        # TODO: mixing current and map's mapset at this point
         if '@' in map_name:
             map_name, src_mapset_name = map_name.split('@')
         else:
@@ -338,7 +354,8 @@ def main():
                                  epsg_code=epsg,
                                  compression=compression,
                                  routpng_flags=routpng_flags,
-                                 wgs84_file=wgs84_file)
+                                 wgs84_file=wgs84_file,
+                                 use_region=True)
 
         data_file.write(pure_map_name + ',' + image_file_name + '\n')
 

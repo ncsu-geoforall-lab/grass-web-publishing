@@ -39,10 +39,8 @@ def get_map_extent_for_file(file_name):
             'west': wlon, 'south': slat}
 
 
-def get_map_extent_for_location(map_name):
-    info_out = gcore.read_command('r.info', map=map_name, flags='g')
-    info = gcore.parse_key_val(info_out, sep='=')
-    proj_in = '{east} {north}\n{west} {south}'.format(**info)
+def proj_to_wgs84(region):
+    proj_in = '{east} {north}\n{west} {south}'.format(**region)
     proc = gcore.start_command('m.proj', input='-', separator=' , ',
                                flags='od', stdin=gcore.PIPE, stdout=gcore.PIPE)
     proc.stdin.write(proj_in)
@@ -54,6 +52,12 @@ def get_map_extent_for_location(map_name):
     wlon, slat, unused = enws[1].split(' ')
     return {'east': elon, 'north': nlat,
             'west': wlon, 'south': slat}
+
+
+def get_map_extent_for_location(map_name):
+    info_out = gcore.read_command('r.info', map=map_name, flags='g')
+    info = gcore.parse_key_val(info_out, sep='=')
+    return proj_to_wgs84(info)
 
     # pygrass code which does not work on ms windows
     #mproj = Module('m.proj')
@@ -95,6 +99,11 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
     tgt_gisrc = gsetup.write_gisrc(tgt_gisdbase,
                                    tgt_location, tgt_mapset_name)
     os.environ['GISRC'] = tgt_gisrc
+    if os.environ.get('WIND_OVERRIDE'):
+        old_temp_region = os.environ['WIND_OVERRIDE']
+        del os.environ['WIND_OVERRIDE']
+    else:
+        old_temp_region = None
     # these lines looks good but anyway when developing the module
     # switching location seemed fragile and on some errors (while running
     # unfinished module) location was switched in the command line
@@ -154,15 +163,30 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
 
         # outputting file with WGS84 coordinates
         if wgs84_file:
-            data_file = open(wgs84_file, 'w')
-            data_file.write(
-                map_extent_to_file_content(
-                    get_map_extent_for_location(map_name))
-                + '\n')
+            with open(wgs84_file, 'w') as data_file:
+                if use_region:
+                    # map which is smaller than region is imported in its own
+                    # small extent, but we export image in region, so we need
+                    # bounds to be for region, not map
+                    # hopefully this is consistent with r.out.png behavior
+                    data_file.write(
+                        map_extent_to_file_content(
+                            proj_to_wgs84(get_region())) + '\n')
+                else:
+                    # use map to get extent
+                    # the result is actually the same as using map
+                    # if region is the same as map (use_region == False)
+                    data_file.write(
+                        map_extent_to_file_content(
+                            get_map_extent_for_location(map_name))
+                        + '\n')
 
     finally:
         # juts in case we need to do something in the old location
+        # our callers probably do
         os.environ['GISRC'] = src_gisrc
+        if old_temp_region:
+            os.environ['WIND_OVERRIDE'] = old_temp_region
         # set current in library
         src_mapset.current()
 

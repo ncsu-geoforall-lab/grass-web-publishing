@@ -6,6 +6,23 @@ the export of GRASS data to the form which can be used by a Leaflet
 web page, i.e. easily imported used from JavaScript code.
 
 
+TODO
+----
+
+* work for computational region as well as for map extent
+* document Python functions
+* create manual pages
+* describe output structure
+* generate manuals and publish them using GitHub pages
+* better error handling (return codes of modules should be checked)
+* solve the overwrite behavior (according to directory structure)
+* use map titles for large maps (perhaps in separate module)
+* apply region extent only to maps same or bigger than region (use map extent for small maps)
+* apply map resolution when computational region's is too fine for map (may cause problems for Leaflet)
+* separate option of resolution (must be same for ns ew)
+* crop thumbnail?
+
+
 Authors
 -------
 
