@@ -44,6 +44,10 @@
 #% options: 0-9
 #%end
 #%flag
+#% key: m
+#% description: Use map extent instead of current region
+#%end
+#%flag
 #% key: t
 #% description: Make NULL cells transparent
 #%end
@@ -66,6 +70,7 @@ import os
 import sys
 
 from grass.script import core as gcore
+
 
 # TODO: put this to grass.utils
 def add_pythonlib_to_path(name):
@@ -102,6 +107,7 @@ except ImportError, error:
     gcore.fatal(_("Cannot import from routleaflet: ") + str(error)
                 + _("\nThe search path (sys.path) is: ") + str(sys.path))
 
+
 def main():
     options, flags = gcore.parser()
 
@@ -123,6 +129,11 @@ def main():
     else:
         wgs84_file = None
 
+    if flags['m']:
+        use_region = False
+    else:
+        use_region = True
+
     if '@' in map_name:
         map_name, src_mapset_name = map_name.split('@')
     else:
@@ -135,7 +146,9 @@ def main():
                              epsg_code=epsg_code,
                              compression=compression,
                              routpng_flags=routpng_flags,
-                             wgs84_file=wgs84_file)
+                             wgs84_file=wgs84_file,
+                             use_region=use_region)
+
 
 if __name__ == '__main__':
     sys.exit(main())

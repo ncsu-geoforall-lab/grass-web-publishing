@@ -12,6 +12,9 @@ from grass.script import core as gcore
 from grass.script import setup as gsetup
 from grass.pygrass.gis import Mapset, Location
 
+from routleaflet.utils import get_region, set_region, \
+    get_location_proj_string, reproject_region
+
 
 def map_extent_to_js_leaflet_list(extent):
     """extent dictionary with latitudes and longitudes extent
@@ -36,12 +39,10 @@ def get_map_extent_for_file(file_name):
             'west': wlon, 'south': slat}
 
 
-# TODO: support parallel calls, rewrite as class?
 def get_map_extent_for_location(map_name):
     info_out = gcore.read_command('r.info', map=map_name, flags='g')
     info = gcore.parse_key_val(info_out, sep='=')
     proj_in = '{east} {north}\n{west} {south}'.format(**info)
-    print proj_in
     proc = gcore.start_command('m.proj', input='-', separator=' , ',
                                flags='od', stdin=gcore.PIPE, stdout=gcore.PIPE)
     proc.stdin.write(proj_in)
@@ -51,10 +52,10 @@ def get_map_extent_for_location(map_name):
     enws = proj_out.split(os.linesep)
     elon, nlat, unused = enws[0].split(' ')
     wlon, slat, unused = enws[1].split(' ')
-    print enws
     return {'east': elon, 'north': nlat,
             'west': wlon, 'south': slat}
 
+    # pygrass code which does not work on ms windows
     #mproj = Module('m.proj')
     #mproj.inputs.stdin = proj_in
     #mproj(flags='o', input='-', stdin_=subprocess.PIPE,
@@ -62,9 +63,21 @@ def get_map_extent_for_location(map_name):
     #print mproj.outputs.stdout
 
 
+# TODO: support parallel calls, rewrite as class?
+
+
 def export_png_in_projection(src_mapset_name, map_name, output_file,
                              epsg_code,
-                             routpng_flags, compression, wgs84_file):
+                             routpng_flags, compression, wgs84_file,
+                             use_region=True):
+    """
+
+    :param use_region: use computation region and not map extent
+    """
+    if use_region:
+        src_region = get_region()
+        src_proj_string = get_location_proj_string()
+
     # TODO: change only location and not gisdbase?
     # we rely on the tmp dir having enough space for our map
     tgt_gisdbase = tempfile.mkdtemp()
@@ -76,6 +89,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
     src_mapset = Mapset(src_mapset_name)
 
     # get source (old) and set target (new) GISRC enviromental variable
+    # TODO: set environ only for child processes could be enough and it would
+    # enable (?) parallel runs
     src_gisrc = os.environ['GISRC']
     tgt_gisrc = gsetup.write_gisrc(tgt_gisdbase,
                                    tgt_location, tgt_mapset_name)
@@ -102,31 +117,42 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         # (right GISRC is enough for them)
         tgt_mapset.current()
 
-        # map import
-        # respect comp region of the src location would be nice
-        # (using g.region in src location and m.proj)
-        # respect MASK of the src location would be hard
-        # and null values are usually enough
+        # setting region
+        if use_region:
+            # respecting computation region of the src location
+            # by previous use g.region in src location
+            # and m.proj and g.region now
+            # respecting MASK of the src location would be hard
+            # null values in map are usually enough
+            tgt_proj_string = get_location_proj_string()
+            tgt_region = reproject_region(src_region,
+                                          from_proj=src_proj_string,
+                                          to_proj=tgt_proj_string)
+            # uses g.region thus and sets region only for child processes
+            # which is enough now
+            set_region(tgt_region)
+        else:
+            # find out map extent to import everything
+            # using only classic API because of some problems with pygrass
+            # on ms windows
+            rproj_out = gcore.read_command('r.proj', input=map_name,
+                                           dbase=src_mapset.gisdbase,
+                                           location=src_mapset.location,
+                                           mapset=src_mapset.name,
+                                           output=map_name, flags='g')
+            a = gcore.parse_key_val(rproj_out, sep='=', vsep=' ')
+            gcore.run_command('g.region', **a)
 
-        # find out map extent to import everything
-        # combining pygrass also with classic API because of some problems
-        # however, rewriting to pygrass should be possible
-        rproj_out = gcore.read_command('r.proj', input=map_name,
-                                       dbase=src_mapset.gisdbase,
-                                       location=src_mapset.location,
-                                       mapset=src_mapset.name,
-                                       output=map_name, flags='g')
-        a = gcore.parse_key_val(rproj_out, sep='=', vsep=' ')
-        gcore.run_command('g.region', **a)
         # map import
         gcore.run_command('r.proj', input=map_name, dbase=src_mapset.gisdbase,
-               location=src_mapset.location, mapset=src_mapset.name,
-               output=map_name)
+                          location=src_mapset.location, mapset=src_mapset.name,
+                          output=map_name)
 
-        # actual work here
-        gcore.run_command('r.out.png', input=map_name, output=output_file, compression=compression,
-                  flags=routpng_flags)
+        # actual export
+        gcore.run_command('r.out.png', input=map_name, output=output_file,
+                          compression=compression, flags=routpng_flags)
 
+        # outputting file with WGS84 coordinates
         if wgs84_file:
             data_file = open(wgs84_file, 'w')
             data_file.write(
