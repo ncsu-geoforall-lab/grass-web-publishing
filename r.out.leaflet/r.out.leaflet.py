@@ -73,7 +73,7 @@
 #% description: Specifies which information about maps should be exported
 #% required: no
 #% multiple: yes
-#% options: histogram, pie-histogram, statistics, thumbnail, geotiff, packed-map
+#% options: legend, histogram, pie-histogram, info, statistics, thumbnail, geotiff, packed-map
 #%end
 #%option
 #% key: compression
@@ -157,10 +157,30 @@ def escape_endlines(text):
     return text.replace('\n', '\\n')
 
 
+def escape_quotes(text):
+    return text.replace('"', '\\"')
+
+
+def escape_backslashes(text):
+    return text.replace('\\', '\\\\')
+
+
 def generate_infos(map_name, projected_png_file, output_directory,
                    required_infos, attributes):
     histogram_width = 500
     histogram_height = 500
+
+    if 'legend' in required_infos:
+        file_name = map_name + '.png'
+        file_path = os.path.join(output_directory, 'legends',
+                                 file_name)
+        ensure_dir(file_path)
+        # let's use histogram size
+        loutputs.export_legend(map_name, file_path,
+                               width=histogram_width,
+                               height=histogram_height)
+        attributes.append(('legend', file_name))
+
     if 'histogram' in required_infos:
         file_name = map_name + '.png'
         file_path = os.path.join(output_directory, 'histograms',
@@ -181,6 +201,17 @@ def generate_infos(map_name, projected_png_file, output_directory,
                                   height=histogram_height,
                                   style='pie')
         attributes.append(('piehistogram', file_name))
+
+    if 'info' in required_infos:
+        file_name = map_name + '.txt'
+        file_path = os.path.join(output_directory, 'infos',
+                                 file_name)
+        ensure_dir(file_path)
+        loutputs.export_info(map_name, file_path)
+        attributes.append(('infofile', file_name))
+        with open(file_path, 'r') as data_file:
+            content = data_file.read()
+            attributes.append(('info', content))
 
     if 'statistics' in required_infos:
         file_name = map_name + '.txt'
@@ -380,7 +411,12 @@ def main():
                                    opacity=opacities[i]))
         if extra_attributes:
             extra_js_attributes = [pair[0] + ': "' +
-                                   escape_endlines(pair[1]) + '"'
+                                   escape_quotes(
+                                       escape_endlines(
+                                           escape_backslashes(
+                                               pair[1]
+                                           )))
+                                   + '"'
                                    for pair in extra_attributes]
             js_data_file.write(', ' + ', '.join(extra_js_attributes))
         js_data_file.write("""}\n""")

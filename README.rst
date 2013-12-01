@@ -21,6 +21,7 @@ TODO
 * apply map resolution when computational region's is too fine for map (may cause problems for Leaflet)
 * separate option of resolution (must be same for ns ew)
 * crop thumbnail?
+* export (and import?) of QGIS project file including the data files (GeoTIFF, ...)
 
 
 Authors
