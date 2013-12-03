@@ -42,11 +42,15 @@ def get_map_extent_for_file(file_name):
 def proj_to_wgs84(region):
     proj_in = '{east} {north}\n{west} {south}'.format(**region)
     proc = gcore.start_command('m.proj', input='-', separator=' , ',
-                               flags='od', stdin=gcore.PIPE, stdout=gcore.PIPE)
+                               flags='od',
+                               stdin=gcore.PIPE, stdout=gcore.PIPE,
+                               stderr=gcore.PIPE)
     proc.stdin.write(proj_in)
     proc.stdin.close()
     proc.stdin = None
-    proj_out = proc.communicate()[0]
+    proj_out, errors = proc.communicate()
+    if proc.returncode:
+        raise RuntimeError("m.proj error: %s" % errors)
     enws = proj_out.split(os.linesep)
     elon, nlat, unused = enws[0].split(' ')
     wlon, slat, unused = enws[1].split(' ')
@@ -163,6 +167,7 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
 
         # outputting file with WGS84 coordinates
         if wgs84_file:
+            gcore.message("Projecting coordinates to LL WGS 84...")
             with open(wgs84_file, 'w') as data_file:
                 if use_region:
                     # map which is smaller than region is imported in its own
