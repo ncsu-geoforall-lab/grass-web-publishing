@@ -373,7 +373,7 @@ def main():
             map_name, src_mapset_name = map_name.split('@')
         else:
             # TODO: maybe mapset is mandatory for those out of current mapset?
-            src_mapset_name = ''
+            src_mapset_name = gcore.gisenv()['MAPSET']
         image_file_name = pure_map_name + '.png'
         image_file_path = os.path.join(out_dir, image_file_name)
         # TODO: skip writing to file and extract the information from
