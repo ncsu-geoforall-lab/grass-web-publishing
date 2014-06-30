@@ -40,7 +40,7 @@ def export_legend(mapname, filename, width, height):
                     backgroud_color='000000',
                     driver='png')
     returncode, stdout, messages = _read2_command('d.legend',
-                                                  map=mapname)
+                                                  rast=mapname)
     try:
         from PIL import Image
         image = Image.open(filename)
