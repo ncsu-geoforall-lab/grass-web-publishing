@@ -11,10 +11,10 @@ import tempfile
 
 from grass.script import core as gcore
 from grass.script import setup as gsetup
-from grass.pygrass.gis import Mapset, Location
 
 from routleaflet.utils import get_region, set_region, \
-    get_location_proj_string, reproject_region, set_current_mapset
+    get_location_proj_string, reproject_region, set_current_mapset, \
+    Mapset
 
 
 def map_extent_to_js_leaflet_list(extent):
@@ -144,7 +144,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
     # because we are using PERMANENT we don't have to create mapset explicitly
     tgt_mapset_name = 'PERMANENT'
 
-    src_mapset = Mapset(src_mapset_name)
+    src_mapset = Mapset(name=src_mapset_name, use_current=True)
+    assert src_mapset.exists()
 
     # get source (old) and set target (new) GISRC enviromental variable
     # TODO: set environ only for child processes could be enough and it would
@@ -161,6 +162,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
     else:
         old_temp_region = None
 
+    tgt_mapset = Mapset(tgt_gisdbase, tgt_location, tgt_mapset_name)
+
     try:
         # the function itself is not safe for other (backgroud) processes
         # (e.g. GUI), however we already switched GISRC for us
@@ -170,10 +173,7 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
                               epsg=epsg_code,
                               datum=None,
                               datum_trans=None)
-
-        # Mapset object cannot be created if the real mapset does not exists
-        tgt_mapset = Mapset(gisdbase=tgt_gisdbase, location=tgt_location,
-                            mapset=tgt_mapset_name)
+        assert tgt_mapset.exists()
 
         # we need to make the mapset change in the current GISRC (tgt)
         # note that the C library for this process still holds the
@@ -202,7 +202,7 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
             # using only classic API because of some problems with pygrass
             # on ms windows
             rproj_out = gcore.read_command('r.proj', input=map_name,
-                                           dbase=src_mapset.gisdbase,
+                                           dbase=src_mapset.database,
                                            location=src_mapset.location,
                                            mapset=src_mapset.name,
                                            output=map_name, flags='g')
@@ -210,7 +210,7 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
             gcore.run_command('g.region', **a)
 
         # map import
-        gcore.run_command('r.proj', input=map_name, dbase=src_mapset.gisdbase,
+        gcore.run_command('r.proj', input=map_name, dbase=src_mapset.database,
                           location=src_mapset.location, mapset=src_mapset.name,
                           output=map_name)
 
@@ -246,14 +246,13 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         if old_temp_region:
             os.environ['WIND_OVERRIDE'] = old_temp_region
         # set current in library
-        set_current_mapset(src_mapset.gisdbase, src_mapset.location,
+        set_current_mapset(src_mapset.database, src_mapset.location,
                            src_mapset.name, gisrc=src_gisrc)
 
         # delete the whole gisdbase
         # delete file by file to ensure that we are deleting only our things
         # exception will be raised when removing non-empty directory
-        tgt_location_path = Location(gisdbase=tgt_gisdbase,
-                                     location=tgt_location).path()
+        tgt_location_path = os.path.join(tgt_gisdbase, tgt_location)
         tgt_mapset.delete()
         os.rmdir(tgt_location_path)
         # dir created by tempfile.mkdtemp() needs to be romved manually

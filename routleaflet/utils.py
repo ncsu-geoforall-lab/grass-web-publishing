@@ -8,6 +8,7 @@ Created on Fri Nov 29 19:28:54 2013
 
 import os
 import copy
+import shutil
 
 
 from grass.script import core as gcore
@@ -113,3 +114,82 @@ def set_current_mapset(dbase, location, mapset, gisrc=None, env=None):
     gisenv['LOCATION_NAME'] = location
     gisenv['MAPSET'] = mapset
     write_env_file(gisenv, gisrc)
+
+
+def get_current_mapset(gisrc=None, env=None):
+    """Gets the current mapset in the ``gisrc`` file.
+
+    If ``gisrc`` is not provided, environment variable ``GISRC`` is
+    used. The ``env`` parameter can be used to override the system
+    (global) environment.
+    """
+    if not gisrc:
+        if env:
+            gisrc = env['GISRC']
+        else:
+            gisrc = os.environ['GISRC']
+    gisenv = read_env_file(gisrc)
+    return gisenv['GISDBASE'], gisenv['LOCATION_NAME'], gisenv['MAPSET']
+
+
+# TODO: similar class in GRASS lib/init/grass.py
+class Mapset(object):
+    """Holds GRASS GIS Database directory, Location name and Mapset name
+
+    Provides few convenient functions.
+    """
+    def __init__(self, database=None, location=None, name=None,
+                 use_current=False, gisrc=None, env=None):
+        # determining the source of session information
+        if not gisrc:
+            if env:
+                gisrc = env['GISRC']
+            else:
+                gisrc = os.environ['GISRC']
+        if database and not location:
+            raise ValueError(_("If database path is provided, location"
+                               " name needs to be provided as well"))
+        if location and not name:
+            raise ValueError(_("If location name is provided, mapset"
+                               " name needs to be provided as well"))
+        # current values if requested
+        if use_current:
+            current_database, current_location, current_mapset = get_current_mapset(gisrc=gisrc, env=env)
+        # use the parameter, or current if requested, or raise error
+        if database:
+            self.database = database
+        else:
+            if use_current:
+                self.database = current_database
+            else:
+                raise ValueError(_("Database path cannot be determined"))
+        if location:
+            self.location = location
+        else:
+            if use_current:
+                self.location = current_location
+            else:
+                raise ValueError(_("Location name cannot be determined"))
+        if name:
+            self.name = name
+        else:
+            if use_current:
+                self.name = current_mapset
+            else:
+                raise ValueError(_("Mapset name cannot be determined"))
+
+    @property
+    def mapset_path(self):
+        return os.path.join(self.database, self.location, self.name)
+
+    def delete(self):
+        """Delete the mapset"""
+        # TODO: if this would be a general function, we would have to
+        # create a policy on what can be deleted, only current should
+        # be for writing, but it does not make sense to delete current
+        # so maybe any mapset can be deleted with this API
+        shutil.rmtree(self.mapset_path)
+
+    # TODO: a simple check, better checks now e.g. in lib/init/grass.py
+    def exists(self):
+        return os.path.exists(self.mapset_path)

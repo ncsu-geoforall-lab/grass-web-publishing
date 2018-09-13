@@ -109,7 +109,7 @@ import os
 import sys
 
 from grass.script import core as gcore
-from grass.pygrass.utils import set_path
+from grass.script.utils import set_path
 
 
 set_path(modulename='r.out.leaflet', dirname='routleaflet',
