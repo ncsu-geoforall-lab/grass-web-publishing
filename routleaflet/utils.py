@@ -39,8 +39,7 @@ def set_region(region):
     del region['south']
     del region['east']
     del region['west']
-    if gs.run_command('g.region', **region):
-        raise RuntimeError("Cannot set region.")
+    gs.run_command('g.region', **region)
 
 
 def get_location_proj_string():

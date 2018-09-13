@@ -339,9 +339,7 @@ def main():
 
     for i, map_name in enumerate(maps):
         if not use_region:
-            if gs.run_command('g.region', rast=map_name):
-                raise RuntimeError("Cannot set region from map <%s>."
-                                   % map_name)
+            gs.run_command('g.region', rast=map_name)
         if '@' in map_name:
             pure_map_name = map_name.split('@')[0]
         else:
