@@ -158,7 +158,8 @@ class Mapset(object):
         # current values if requested
         # the source of session information is determined in the function
         if use_current:
-            current_database, current_location, current_mapset = get_current_mapset(gisrc=gisrc, env=env)
+            current_database, current_location, current_mapset = \
+                get_current_mapset(gisrc=gisrc, env=env)
         # save potential sources of session information for later
         # (to be used in function if appropriate and not overridden)
         self._gisrc = gisrc

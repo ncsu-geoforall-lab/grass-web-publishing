@@ -85,6 +85,7 @@ def thumbnail_image(input_file, output_file):
                         " Maybe you don't have PIL."
                         " Will output the same image.") % error)
 
+
 def export_raster_as_geotiff(mapname, filename):
     gcore.run_command('r.out.tiff', input=mapname, output=filename)
 

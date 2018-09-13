@@ -263,7 +263,8 @@ def main():
         dbiface.connect()
 
         # the query
-        rows = ds.get_registered_maps(columns='id', where=where, order='start_time')
+        rows = ds.get_registered_maps(columns='id', where=where,
+                                      order='start_time')
         if not rows:
             gcore.fatal(_("Cannot get any maps for spatio-temporal raster"
                           " dataset <%s>."
@@ -389,8 +390,7 @@ def main():
                                        escape_endlines(
                                            escape_backslashes(
                                                pair[1]
-                                           )))
-                                   + '"'
+                                           ))) + '"'
                                    for pair in extra_attributes]
             js_data_file.write(', ' + ', '.join(extra_js_attributes))
         js_data_file.write("""}\n""")

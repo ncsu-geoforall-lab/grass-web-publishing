@@ -14,7 +14,6 @@ from grass.script import setup as gsetup
 
 from routleaflet.utils import get_region, set_region, \
     get_location_proj_string, reproject_region, Mapset
-    
 
 
 def map_extent_to_js_leaflet_list(extent):
@@ -63,13 +62,6 @@ def get_map_extent_for_location(map_name):
     info_out = gcore.read_command('r.info', map=map_name, flags='g')
     info = gcore.parse_key_val(info_out, sep='=')
     return proj_to_wgs84(info)
-
-    # pygrass code which does not work on ms windows
-    #mproj = Module('m.proj')
-    #mproj.inputs.stdin = proj_in
-    #mproj(flags='o', input='-', stdin_=subprocess.PIPE,
-    #      stdout_=subprocess.PIPE)
-    #print mproj.outputs.stdout
 
 
 def raster_to_png(map_name, output_file,
@@ -235,8 +227,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
                     # if region is the same as map (use_region == False)
                     data_file.write(
                         map_extent_to_file_content(
-                            get_map_extent_for_location(map_name))
-                        + '\n')
+                            get_map_extent_for_location(map_name)) +
+                        '\n')
 
     finally:
         # juts in case we need to do something in the old location
