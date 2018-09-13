@@ -303,6 +303,9 @@ def main():
     else:
         infos = [options['info']]
 
+    if 'geotiff' in infos and not gs.find_program('r.out.tiff', '--help'):
+        gs.fatal(_("Install r.out.tiff add-on module to export GeoTIFF"))
+
     # r.out.png options
     compression = int(options['compression'])
     # flag w is passed to r.out.png.proj
