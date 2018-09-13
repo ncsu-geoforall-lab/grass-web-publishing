@@ -112,7 +112,7 @@ def raster_to_png(map_name, output_file,
         _setEnvironment(width=width, height=height,
                         filename=output_file,
                         transparent=True, driver='cairo',
-                        compression=comprehension)
+                        compression=compression)
         gcore.run_command('d.rast', map=map_name)
         if 'w' in routpng_flags:
             # TODO: the r.out.png flag -w (world file) is ignored
