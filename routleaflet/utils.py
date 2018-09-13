@@ -48,6 +48,7 @@ def get_location_proj_string():
     return out.strip()
 
 
+# TODO: this does not take care of resolution (it's just extent)
 def reproject_region(region, from_proj, to_proj):
     region = copy.copy(region)
     print "to reproject:", region

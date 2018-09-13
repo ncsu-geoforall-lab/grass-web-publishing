@@ -6,6 +6,7 @@ Created on Thu Oct 31 22:00:39 2013
 """
 
 import os
+import sys
 import tempfile
 
 from grass.script import core as gcore
@@ -69,6 +70,55 @@ def get_map_extent_for_location(map_name):
     #mproj(flags='o', input='-', stdin_=subprocess.PIPE,
     #      stdout_=subprocess.PIPE)
     #print mproj.outputs.stdout
+
+
+def raster_to_png(map_name, output_file,
+                  compression=None, routpng_flags=None, backend=None):
+    """Convert raster map ``map_name`` to PNG file named ``output_file``
+
+    :param compression: PNG file compression (0-9)
+    :param routpng_flags: flags for r.out.png (see r.out.png --help)
+    :param backend: ``r.out.png`` or ``d.rast``
+
+    ``backend`` can be set to ``r.out.png`` for export using this module
+    or ``d.rast`` for rendering using this module. The flags are
+    applied in both cases. Default is platform dependent and it is subject
+    to change based on the most reliable option for each platform.
+    """
+    if not backend:
+        if sys.platform.startswith('win'):
+            backend = 'd.rast'
+        else:
+            backend = 'r.out.png'
+    if backend == 'r.out.png':
+        gcore.run_command('r.out.png', input=map_name, output=output_file,
+                          compression=compression, flags=routpng_flags)
+    else:
+        from routleaflet.outputs import (
+            _setEnvironment, _read2_command)
+        region = get_region()
+        if region['nsres'] > region['ewres']:
+            # oversample in rows, do not loose columns
+            width = region['cols']
+            height = region['rows'] * (region['nsres'] / region['ewres'])
+        else:
+            # oversample in columns, do not loose rows
+            width = region['cols'] * (region['ewres'] / region['nsres'])
+            height = region['rows']
+        if 't' in routpng_flags:
+            transparent = True
+        else:
+            transparent = False
+        _setEnvironment(width=width, height=height,
+                        filename=output_file,
+                        transparent=True, driver='cairo',
+                        compression=comprehension)
+        gcore.run_command('d.rast', map=map_name)
+        if 'w' in routpng_flags:
+            # TODO: the r.out.png flag -w (world file) is ignored
+            gcore.warning(_("World file for PNG with its actual SRS"
+                            " not generated with conversion (export)"
+                            " backend <{}>").format(backend))
 
 
 # TODO: support parallel calls, rewrite as class?
@@ -144,6 +194,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
                                           to_proj=tgt_proj_string)
             # uses g.region thus and sets region only for child processes
             # which is enough now
+            # TODO: unlike the other branch, this keeps the current
+            # resolution which is not correct
             set_region(tgt_region)
         else:
             # find out map extent to import everything
@@ -163,8 +215,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
                           output=map_name)
 
         # actual export
-        gcore.run_command('r.out.png', input=map_name, output=output_file,
-                          compression=compression, flags=routpng_flags)
+        raster_to_png(map_name, output_file, compression=compression,
+                      routpng_flags=routpng_flags)
 
         # outputting file with WGS84 coordinates
         if wgs84_file:
