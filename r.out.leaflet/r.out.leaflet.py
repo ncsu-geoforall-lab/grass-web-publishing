@@ -109,42 +109,16 @@ import os
 import sys
 
 from grass.script import core as gcore
+from grass.pygrass.utils import set_path
 
 
-# TODO: put this to grass.utils
-def add_pythonlib_to_path(name):
-    libpath = None
-    # this is specified by Makefile
-    if os.path.isdir(os.path.join(os.getenv('GISBASE'), 'etc', name)):
-        libpath = os.path.join(os.getenv('GISBASE'), 'etc', name)
-    elif os.getenv('GRASS_ADDON_BASE') and \
-            os.path.isdir(os.path.join(os.getenv('GRASS_ADDON_BASE'), 'etc',
-                                       name)):
-        libpath = os.path.join(os.getenv('GRASS_ADDON_BASE'), 'etc', name)
-    # this is the directory name
-    # possibly use os.path.realpath('..') here
-    elif os.path.join(os.path.dirname(__file__), '..', name):
-        libpath = os.path.join(os.path.dirname(__file__), '..')
-    # maybe this should be removed because it is useless
-    elif os.path.isdir(os.path.join('..', name)):
-        libpath = os.path.join('..', name)
-    else:
-        gcore.fatal(_("Python library '%s' not found. Probably it was not"
-                      "intalled correctly.") % name)
+set_path(modulename='r.out.leaflet', dirname='routleaflet',
+         path=os.path.join(os.path.dirname(__file__), '..'))
 
-    sys.path.append(libpath)
 
-add_pythonlib_to_path('routleaflet')
-
-# maybe this would be the same without try-except
-# TODO: ask about the best practice on ML
-try:
-    from routleaflet.pngproj import get_map_extent_for_file, \
-        map_extent_to_js_leaflet_list, export_png_in_projection
-    import routleaflet.outputs as loutputs
-except ImportError, error:
-    gcore.fatal(_("Cannot import from routleaflet: ") + str(error)
-                + _("\nThe search path (sys.path) is: ") + str(sys.path))
+from routleaflet.pngproj import get_map_extent_for_file, \
+    map_extent_to_js_leaflet_list, export_png_in_projection
+import routleaflet.outputs as loutputs
 
 
 def ensure_dir(f):
