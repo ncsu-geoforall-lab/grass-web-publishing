@@ -106,11 +106,12 @@ def main():
     else:
         use_region = True
 
+    # TODO: mixing current and map's mapset at this point
+    # or perhaps not an issue if parser adds mapset automatically (?)
     if '@' in map_name:
         map_name, src_mapset_name = map_name.split('@')
     else:
-        # TODO: maybe mapset is mandatory for those out of current mapset?
-        src_mapset_name = ''
+        src_mapset_name = gcore.gisenv()['MAPSET']
 
     export_png_in_projection(map_name=map_name,
                              src_mapset_name=src_mapset_name,
