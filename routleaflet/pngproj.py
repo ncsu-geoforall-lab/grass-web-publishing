@@ -13,8 +13,8 @@ from grass.script import core as gcore
 from grass.script import setup as gsetup
 
 from routleaflet.utils import get_region, set_region, \
-    get_location_proj_string, reproject_region, set_current_mapset, \
-    Mapset
+    get_location_proj_string, reproject_region, Mapset
+    
 
 
 def map_extent_to_js_leaflet_list(extent):
@@ -178,8 +178,7 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         # we need to make the mapset change in the current GISRC (tgt)
         # note that the C library for this process still holds the
         # path to the old GISRC file (src)
-        set_current_mapset(tgt_gisdbase, tgt_location, tgt_mapset_name,
-                           gisrc=tgt_gisrc)
+        tgt_mapset.set_as_current(gisrc=tgt_gisrc)
 
         # setting region
         if use_region:
@@ -246,15 +245,13 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         if old_temp_region:
             os.environ['WIND_OVERRIDE'] = old_temp_region
         # set current in library
-        set_current_mapset(src_mapset.database, src_mapset.location,
-                           src_mapset.name, gisrc=src_gisrc)
+        src_mapset.set_as_current(gisrc=src_gisrc)
 
         # delete the whole gisdbase
         # delete file by file to ensure that we are deleting only our things
         # exception will be raised when removing non-empty directory
-        tgt_location_path = os.path.join(tgt_gisdbase, tgt_location)
         tgt_mapset.delete()
-        os.rmdir(tgt_location_path)
+        os.rmdir(tgt_mapset.location_path)
         # dir created by tempfile.mkdtemp() needs to be romved manually
         os.rmdir(tgt_gisdbase)
         # we have to remove file created by tempfile.mkstemp function

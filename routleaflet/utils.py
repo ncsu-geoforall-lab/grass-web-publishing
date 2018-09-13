@@ -132,20 +132,23 @@ def get_current_mapset(gisrc=None, env=None):
     return gisenv['GISDBASE'], gisenv['LOCATION_NAME'], gisenv['MAPSET']
 
 
-# TODO: similar class in GRASS lib/init/grass.py
+# TODO: similar class in GRASS lib/init/grass.py (MapsetSettings)
 class Mapset(object):
     """Holds GRASS GIS Database directory, Location name and Mapset name
 
     Provides few convenient functions.
+
+    It can represent mapset which does not exist, so it can be used for
+    mapset manipulation. Only when ``use_current=True`` is used, mapset
+    needs to be set in the session (rc file) at the time of object
+    creation.
+
+    If ``gisrc`` is not provided, environment variable ``GISRC`` is
+    used. The ``env`` parameter can be used to override the system
+    (global) environment.
     """
     def __init__(self, database=None, location=None, name=None,
                  use_current=False, gisrc=None, env=None):
-        # determining the source of session information
-        if not gisrc:
-            if env:
-                gisrc = env['GISRC']
-            else:
-                gisrc = os.environ['GISRC']
         if database and not location:
             raise ValueError(_("If database path is provided, location"
                                " name needs to be provided as well"))
@@ -153,8 +156,13 @@ class Mapset(object):
             raise ValueError(_("If location name is provided, mapset"
                                " name needs to be provided as well"))
         # current values if requested
+        # the source of session information is determined in the function
         if use_current:
             current_database, current_location, current_mapset = get_current_mapset(gisrc=gisrc, env=env)
+        # save potential sources of session information for later
+        # (to be used in function if appropriate and not overridden)
+        self._gisrc = gisrc
+        self._env = env
         # use the parameter, or current if requested, or raise error
         if database:
             self.database = database
@@ -181,6 +189,26 @@ class Mapset(object):
     @property
     def mapset_path(self):
         return os.path.join(self.database, self.location, self.name)
+
+    @property
+    def location_path(self):
+        return os.path.join(self.database, self.location)
+
+    def set_as_current(self, gisrc=None, env=None):
+        """Set the this mapset as the current mapset
+
+        If ``gisrc`` is not provided, environment variable ``GISRC`` is
+        used. The ``env`` parameter can be used to override the system
+        (global) environment.
+        """
+        # use the saved potential sources of session information
+        # when not overridden by one of the parameters
+        if not gisrc and not env:
+            gisrc = self._gisrc
+            env = self._env
+        # the source of session information is determined in the function
+        set_current_mapset(self.database, self.location, self.name,
+                           gisrc=gisrc, env=env)
 
     def delete(self):
         """Delete the mapset"""
