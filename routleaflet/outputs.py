@@ -7,7 +7,7 @@ Created on Tue Nov 26 12:15:37 2013
 
 import os
 
-import grass.script.core as gcore
+import grass.script as gs
 
 
 def _setEnvironment(width, height, filename, transparent,
@@ -28,9 +28,9 @@ def _setEnvironment(width, height, filename, transparent,
 
 
 def _read2_command(*args, **kwargs):
-    kwargs['stdout'] = gcore.PIPE
-    kwargs['stderr'] = gcore.PIPE
-    ps = gcore.start_command(*args, **kwargs)
+    kwargs['stdout'] = gs.PIPE
+    kwargs['stderr'] = gs.PIPE
+    ps = gs.start_command(*args, **kwargs)
     stdout, stderr = ps.communicate()
     return ps.returncode, stdout, stderr
 
@@ -51,9 +51,9 @@ def export_legend(mapname, filename, width, height):
         cropped_image = image.crop(imageBox)
         cropped_image.save(filename, 'PNG')
     except ImportError, error:
-        gcore.warning(_("Cannot crop legend image ({error})."
-                        " Maybe you don't have PIL."
-                        " Uncropped legend image will be used.") % error)
+        gs.warning(_("Cannot crop legend image ({error})."
+                     " Maybe you don't have PIL."
+                     " Uncropped legend image will be used.") % error)
 
 
 def export_histogram(mapname, filename, width, height, style='bar'):
@@ -64,13 +64,13 @@ def export_histogram(mapname, filename, width, height, style='bar'):
 
 
 def export_info(mapname, filename):
-    output = gcore.read_command('r.info', map=mapname)
+    output = gs.read_command('r.info', map=mapname)
     with open(filename, 'w') as output_file:
         output_file.write(output)
 
 
 def export_statistics(mapname, filename):
-    gcore.run_command('r.univar', flags='e', map=mapname, output=filename)
+    gs.run_command('r.univar', flags='e', map=mapname, output=filename)
 
 
 def thumbnail_image(input_file, output_file):
@@ -81,14 +81,14 @@ def thumbnail_image(input_file, output_file):
         image.thumbnail((200, 200), Image.ANTIALIAS)
         image.save(output_file, 'PNG')
     except ImportError, error:
-        gcore.warning(_("Cannot thumbnail image ({error})."
-                        " Maybe you don't have PIL."
-                        " Will output the same image.") % error)
+        gs.warning(_("Cannot thumbnail image ({error})."
+                     " Maybe you don't have PIL."
+                     " Will output the same image.") % error)
 
 
 def export_raster_as_geotiff(mapname, filename):
-    gcore.run_command('r.out.tiff', input=mapname, output=filename)
+    gs.run_command('r.out.tiff', input=mapname, output=filename)
 
 
 def export_raster_packed(mapname, filename):
-    gcore.run_command('r.pack', input=mapname, output=filename)
+    gs.run_command('r.pack', input=mapname, output=filename)

@@ -10,8 +10,7 @@ import os
 import copy
 import shutil
 
-
-from grass.script import core as gcore
+import grass.script as gs
 
 
 def get_region():
@@ -20,8 +19,8 @@ def get_region():
     Uses standardized key names. Outputs only 2D region values which are usable
     for conversion to another location.
     """
-    gregion_out = gcore.read_command('g.region', flags='pg')
-    region = gcore.parse_key_val(gregion_out, sep='=')
+    gregion_out = gs.read_command('g.region', flags='pg')
+    region = gs.parse_key_val(gregion_out, sep='=')
     return {'east': float(region['e']), 'north': float(region['n']),
             'west': float(region['w']), 'south': float(region['s']),
             'rows': int(region['rows']), 'cols': int(region['cols']),
@@ -40,12 +39,12 @@ def set_region(region):
     del region['south']
     del region['east']
     del region['west']
-    if gcore.run_command('g.region', **region):
+    if gs.run_command('g.region', **region):
         raise RuntimeError("Cannot set region.")
 
 
 def get_location_proj_string():
-    out = gcore.read_command('g.proj', flags='jf')
+    out = gs.read_command('g.proj', flags='jf')
     return out.strip()
 
 
@@ -55,10 +54,9 @@ def reproject_region(region, from_proj, to_proj):
     print "to reproject:", region
     proj_input = '{east} {north}\n{west} {south}'.format(**region)
     print proj_input
-    proc = gcore.start_command('m.proj', input='-', separator=' , ',
-                               proj_in=from_proj, proj_out=to_proj,
-                               stdin=gcore.PIPE,
-                               stdout=gcore.PIPE, stderr=gcore.PIPE)
+    proc = gs.start_command('m.proj', input='-', separator=' , ',
+                            proj_in=from_proj, proj_out=to_proj,
+                            stdin=gs.PIPE, stdout=gs.PIPE, stderr=gs.PIPE)
     proc.stdin.write(proj_input)
     proc.stdin.close()
     proc.stdin = None

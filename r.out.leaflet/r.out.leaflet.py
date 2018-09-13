@@ -108,16 +108,16 @@ Created on Fri Oct  4 17:17:49 2013
 import os
 import sys
 
-from grass.script import core as gcore
-from grass.script.utils import set_path
+import grass.script as gs
 
 
-set_path(modulename='r.out.leaflet', dirname='routleaflet',
-         path=os.path.join(os.path.dirname(__file__), '..'))
+gs.set_path(modulename='r.out.leaflet', dirname='routleaflet',
+            path=os.path.join(os.path.dirname(__file__), '..'))
 
 
-from routleaflet.pngproj import get_map_extent_for_file, \
-    map_extent_to_js_leaflet_list, export_png_in_projection
+from routleaflet.pngproj import (
+    get_map_extent_for_file, map_extent_to_js_leaflet_list,
+    export_png_in_projection)
 import routleaflet.outputs as loutputs
 
 
@@ -224,18 +224,18 @@ def generate_infos(map_name, projected_png_file, output_directory,
 
 
 def main():
-    options, flags = gcore.parser()
+    options, flags = gs.parser()
 
     # it does not check if pngs and other files exists,
     # maybe it could check the any/all file(s) dir
 
     if options['raster'] and options['strds']:
-        gcore.fatal(_("Options raster and strds cannot be specified together."
-                      " Please decide for one of them."))
+        gs.fatal(_("Options raster and strds cannot be specified together."
+                   " Please decide for one of them."))
     if options['raster'] and options['where']:
-        gcore.fatal(_("Option where cannot be combined with the option raster."
-                      " Please don't set where option or use strds option"
-                      " instead of raster option."))
+        gs.fatal(_("Option where cannot be combined with the option raster."
+                   " Please don't set where option or use strds option"
+                   " instead of raster option."))
     if options['raster']:
         if ',' in options['raster']:
             maps = options['raster'].split(',')  # TODO: skip empty parts
@@ -256,7 +256,7 @@ def main():
         ds = tgis.open_old_space_time_dataset(strds, 'strds')
         # check if the dataset is in the temporal database
         if not ds.is_in_db():
-            gcore.fatal(_("Space time dataset <%s> not found") % strds)
+            gs.fatal(_("Space time dataset <%s> not found") % strds)
 
         # we need a database interface
         dbiface = tgis.SQLDatabaseInterfaceConnection()
@@ -266,35 +266,35 @@ def main():
         rows = ds.get_registered_maps(columns='id', where=where,
                                       order='start_time')
         if not rows:
-            gcore.fatal(_("Cannot get any maps for spatio-temporal raster"
-                          " dataset <%s>."
-                          " Dataset is empty or you temporal WHERE"
-                          " condition filtered all maps out."
-                          " Please, specify another dataset,"
-                          " put maps into this dataset"
-                          " or correct your WHERE condition.") % strds)
+            gs.fatal(_("Cannot get any maps for spatio-temporal raster"
+                       " dataset <%s>."
+                       " Dataset is empty or you temporal WHERE"
+                       " condition filtered all maps out."
+                       " Please, specify another dataset,"
+                       " put maps into this dataset"
+                       " or correct your WHERE condition.") % strds)
         maps = [row['id'] for row in rows]
     else:
-        gcore.fatal(_("Either raster or strds option must be specified."
-                      " Please specify one of them."))
+        gs.fatal(_("Either raster or strds option must be specified."
+                   " Please specify one of them."))
     # get the number of maps for later use
     num_maps = len(maps)
 
     out_dir = options['output']
     if not os.path.exists(out_dir):
         # TODO: maybe we could create the last dir on specified path?
-        gcore.fatal(_("Output path <%s> does not exists."
-                      " You need to create the (empty) output directory"
-                      " yourself before running this module.") % out_dir)
+        gs.fatal(_("Output path <%s> does not exists."
+                   " You need to create the (empty) output directory"
+                   " yourself before running this module.") % out_dir)
     epsg = int(options['epsg'])
 
     if ',' in options['opacity']:
         opacities = [float(opacity)
                      for opacity in options['opacity'].split(',')]
         if len(opacities) != num_maps:
-            gcore.fatal(_("Number of opacities <{no}> does not match number"
-                          " of maps <{nm}>.").format(no=len(opacities),
-                                                     nm=num_maps))
+            gs.fatal(_("Number of opacities <{no}> does not match number"
+                       " of maps <{nm}>.").format(no=len(opacities),
+                                                  nm=num_maps))
     else:
         opacities = [float(options['opacity'])] * num_maps
 
@@ -320,7 +320,7 @@ def main():
     if flags['m']:
         use_region = False
         # we will use map extent
-        gcore.use_temp_region()
+        gs.use_temp_region()
     else:
         use_region = True
 
@@ -336,7 +336,7 @@ def main():
 
     for i, map_name in enumerate(maps):
         if not use_region:
-            if gcore.run_command('g.region', rast=map_name):
+            if gs.run_command('g.region', rast=map_name):
                 raise RuntimeError("Cannot set region from map <%s>."
                                    % map_name)
         if '@' in map_name:
@@ -348,7 +348,7 @@ def main():
             map_name, src_mapset_name = map_name.split('@')
         else:
             # TODO: maybe mapset is mandatory for those out of current mapset?
-            src_mapset_name = gcore.gisenv()['MAPSET']
+            src_mapset_name = gs.gisenv()['MAPSET']
         image_file_name = pure_map_name + '.png'
         image_file_path = os.path.join(out_dir, image_file_name)
         # TODO: skip writing to file and extract the information from

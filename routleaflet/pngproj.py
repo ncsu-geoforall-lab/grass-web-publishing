@@ -9,11 +9,12 @@ import os
 import sys
 import tempfile
 
-from grass.script import core as gcore
-from grass.script import setup as gsetup
+import grass.script as gs
+import grass.script.setup as gsetup
 
-from routleaflet.utils import get_region, set_region, \
-    get_location_proj_string, reproject_region, Mapset
+from routleaflet.utils import (
+    get_region, set_region, get_location_proj_string, reproject_region,
+    Mapset)
 
 
 def map_extent_to_js_leaflet_list(extent):
@@ -41,10 +42,9 @@ def get_map_extent_for_file(file_name):
 
 def proj_to_wgs84(region):
     proj_in = '{east} {north}\n{west} {south}'.format(**region)
-    proc = gcore.start_command('m.proj', input='-', separator=' , ',
-                               flags='od',
-                               stdin=gcore.PIPE, stdout=gcore.PIPE,
-                               stderr=gcore.PIPE)
+    proc = gs.start_command('m.proj', input='-', separator=' , ',
+                            flags='od',
+                            stdin=gs.PIPE, stdout=gs.PIPE, stderr=gs.PIPE)
     proc.stdin.write(proj_in)
     proc.stdin.close()
     proc.stdin = None
@@ -59,8 +59,8 @@ def proj_to_wgs84(region):
 
 
 def get_map_extent_for_location(map_name):
-    info_out = gcore.read_command('r.info', map=map_name, flags='g')
-    info = gcore.parse_key_val(info_out, sep='=')
+    info_out = gs.read_command('r.info', map=map_name, flags='g')
+    info = gs.parse_key_val(info_out, sep='=')
     return proj_to_wgs84(info)
 
 
@@ -83,8 +83,8 @@ def raster_to_png(map_name, output_file,
         else:
             backend = 'r.out.png'
     if backend == 'r.out.png':
-        gcore.run_command('r.out.png', input=map_name, output=output_file,
-                          compression=compression, flags=routpng_flags)
+        gs.run_command('r.out.png', input=map_name, output=output_file,
+                       compression=compression, flags=routpng_flags)
     else:
         from routleaflet.outputs import (
             _setEnvironment, _read2_command)
@@ -105,12 +105,12 @@ def raster_to_png(map_name, output_file,
                         filename=output_file,
                         transparent=True, driver='cairo',
                         compression=compression)
-        gcore.run_command('d.rast', map=map_name)
+        gs.run_command('d.rast', map=map_name)
         if 'w' in routpng_flags:
             # TODO: the r.out.png flag -w (world file) is ignored
-            gcore.warning(_("World file for PNG with its actual SRS"
-                            " not generated with conversion (export)"
-                            " backend <{}>").format(backend))
+            gs.warning(_("World file for PNG with its actual SRS"
+                         " not generated with conversion (export)"
+                         " backend <{}>").format(backend))
 
 
 # TODO: support parallel calls, rewrite as class?
@@ -160,11 +160,11 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         # the function itself is not safe for other (backgroud) processes
         # (e.g. GUI), however we already switched GISRC for us
         # and child processes, so we don't influece others
-        gcore.create_location(dbase=tgt_gisdbase,
-                              location=tgt_location,
-                              epsg=epsg_code,
-                              datum=None,
-                              datum_trans=None)
+        gs.create_location(dbase=tgt_gisdbase,
+                           location=tgt_location,
+                           epsg=epsg_code,
+                           datum=None,
+                           datum_trans=None)
         assert tgt_mapset.exists()
 
         # we need to make the mapset change in the current GISRC (tgt)
@@ -192,18 +192,18 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
             # find out map extent to import everything
             # using only classic API because of some problems with pygrass
             # on ms windows
-            rproj_out = gcore.read_command('r.proj', input=map_name,
-                                           dbase=src_mapset.database,
-                                           location=src_mapset.location,
-                                           mapset=src_mapset.name,
-                                           output=map_name, flags='g')
-            a = gcore.parse_key_val(rproj_out, sep='=', vsep=' ')
-            gcore.run_command('g.region', **a)
+            rproj_out = gs.read_command('r.proj', input=map_name,
+                                        dbase=src_mapset.database,
+                                        location=src_mapset.location,
+                                        mapset=src_mapset.name,
+                                        output=map_name, flags='g')
+            a = gs.parse_key_val(rproj_out, sep='=', vsep=' ')
+            gs.run_command('g.region', **a)
 
         # map import
-        gcore.run_command('r.proj', input=map_name, dbase=src_mapset.database,
-                          location=src_mapset.location, mapset=src_mapset.name,
-                          output=map_name)
+        gs.run_command('r.proj', input=map_name, dbase=src_mapset.database,
+                       location=src_mapset.location, mapset=src_mapset.name,
+                       output=map_name)
 
         # actual export
         raster_to_png(map_name, output_file, compression=compression,
@@ -211,7 +211,7 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
 
         # outputting file with WGS84 coordinates
         if wgs84_file:
-            gcore.message("Projecting coordinates to LL WGS 84...")
+            gs.message("Projecting coordinates to LL WGS 84...")
             with open(wgs84_file, 'w') as data_file:
                 if use_region:
                     # map which is smaller than region is imported in its own

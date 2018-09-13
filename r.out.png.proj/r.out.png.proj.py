@@ -69,7 +69,7 @@ Created on Fri Oct  4 17:17:49 2013
 import os
 import sys
 
-from grass.script import core as gcore
+import grass.script as gs
 from grass.script.utils import set_path
 
 
@@ -81,7 +81,7 @@ from routleaflet.pngproj import export_png_in_projection
 
 
 def main():
-    options, flags = gcore.parser()
+    options, flags = gs.parser()
 
     # main options
     map_name = options['input']
@@ -111,7 +111,7 @@ def main():
     if '@' in map_name:
         map_name, src_mapset_name = map_name.split('@')
     else:
-        src_mapset_name = gcore.gisenv()['MAPSET']
+        src_mapset_name = gs.gisenv()['MAPSET']
 
     export_png_in_projection(map_name=map_name,
                              src_mapset_name=src_mapset_name,
