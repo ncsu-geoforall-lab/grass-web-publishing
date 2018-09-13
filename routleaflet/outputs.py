@@ -10,21 +10,24 @@ import os
 import grass.script as gs
 
 
-def _setEnvironment(width, height, filename, transparent,
-                    backgroud_color='ffffff', driver='cairo',
-                    compression=None):
-    os.environ['GRASS_RENDER_WIDTH'] = str(width)
-    os.environ['GRASS_RENDER_HEIGHT'] = str(height)
-    os.environ['GRASS_RENDER_IMMEDIATE'] = driver
-    os.environ['GRASS_RENDER_BACKGROUNDCOLOR'] = backgroud_color
-    os.environ['GRASS_RENDER_TRUECOLOR'] = "TRUE"
+def set_rendering_environment(width, height, filename, transparent,
+                              backgroud_color='ffffff', driver='cairo',
+                              compression=None, env=None):
+    # if parameter not provided (but allow for empty dictionary)
+    if env is None:
+        env = os.environ
+    env['GRASS_RENDER_WIDTH'] = str(width)
+    env['GRASS_RENDER_HEIGHT'] = str(height)
+    env['GRASS_RENDER_IMMEDIATE'] = driver
+    env['GRASS_RENDER_BACKGROUNDCOLOR'] = backgroud_color
+    env['GRASS_RENDER_TRUECOLOR'] = "TRUE"
     if transparent:
-        os.environ['GRASS_RENDER_TRANSPARENT'] = "TRUE"
+        env['GRASS_RENDER_TRANSPARENT'] = "TRUE"
     else:
-        os.environ['GRASS_RENDER_TRANSPARENT'] = "FALSE"
+        env['GRASS_RENDER_TRANSPARENT'] = "FALSE"
     if compression:
-        os.environ['GRASS_RENDER_FILE_COMPRESSION'] = str(compression)
-    os.environ['GRASS_RENDER_FILE'] = str(filename)
+        env['GRASS_RENDER_FILE_COMPRESSION'] = str(compression)
+    env['GRASS_RENDER_FILE'] = str(filename)
 
 
 def _read2_command(*args, **kwargs):
@@ -39,9 +42,9 @@ def export_legend(mapname, filename, width, height):
     # using png driver but need to set bg color if we want transparency
     # otherwise png driver will set pixels to ffffff and PIL will
     # not crop the legend
-    _setEnvironment(width, height, filename, transparent=True,
-                    backgroud_color='000000',
-                    driver='png')
+    set_rendering_environment(width, height, filename, transparent=True,
+                              backgroud_color='000000',
+                              driver='png')
     returncode, stdout, messages = _read2_command('d.legend',
                                                   rast=mapname)
     try:
@@ -58,7 +61,8 @@ def export_legend(mapname, filename, width, height):
 
 def export_histogram(mapname, filename, width, height, style='bar'):
     # using png driver to be sure that it works for ms windows
-    _setEnvironment(width, height, filename, transparent=True, driver='png')
+    set_rendering_environment(width, height, filename, transparent=True,
+                              driver='png')
     returncode, stdout, messages = _read2_command('d.histogram',
                                                   map=mapname, style=style)
 

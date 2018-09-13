@@ -86,8 +86,7 @@ def raster_to_png(map_name, output_file,
         gs.run_command('r.out.png', input=map_name, output=output_file,
                        compression=compression, flags=routpng_flags)
     else:
-        from routleaflet.outputs import (
-            _setEnvironment, _read2_command)
+        from routleaflet.outputs import set_rendering_environment
         region = get_region()
         if region['nsres'] > region['ewres']:
             # oversample in rows, do not loose columns
@@ -101,10 +100,10 @@ def raster_to_png(map_name, output_file,
             transparent = True
         else:
             transparent = False
-        _setEnvironment(width=width, height=height,
-                        filename=output_file,
-                        transparent=True, driver='cairo',
-                        compression=compression)
+        set_rendering_environment(width=width, height=height,
+                                  filename=output_file,
+                                  transparent=True, driver='cairo',
+                                  compression=compression)
         gs.run_command('d.rast', map=map_name)
         if 'w' in routpng_flags:
             # TODO: the r.out.png flag -w (world file) is ignored
