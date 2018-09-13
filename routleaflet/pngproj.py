@@ -13,7 +13,7 @@ from grass.script import setup as gsetup
 from grass.pygrass.gis import Mapset, Location
 
 from routleaflet.utils import get_region, set_region, \
-    get_location_proj_string, reproject_region
+    get_location_proj_string, reproject_region, set_current_mapset
 
 
 def map_extent_to_js_leaflet_list(extent):
@@ -103,14 +103,13 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
     tgt_gisrc = gsetup.write_gisrc(tgt_gisdbase,
                                    tgt_location, tgt_mapset_name)
     os.environ['GISRC'] = tgt_gisrc
+    # we do this only after we obtained region, so it was applied
+    # and we don't need it in the temporary (tgt) mapset
     if os.environ.get('WIND_OVERRIDE'):
         old_temp_region = os.environ['WIND_OVERRIDE']
         del os.environ['WIND_OVERRIDE']
     else:
         old_temp_region = None
-    # these lines looks good but anyway when developing the module
-    # switching location seemed fragile and on some errors (while running
-    # unfinished module) location was switched in the command line
 
     try:
         # the function itself is not safe for other (backgroud) processes
@@ -125,10 +124,12 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         # Mapset object cannot be created if the real mapset does not exists
         tgt_mapset = Mapset(gisdbase=tgt_gisdbase, location=tgt_location,
                             mapset=tgt_mapset_name)
-        # set the current mapset in the library
-        # we actually don't need to switch when only calling modules
-        # (right GISRC is enough for them)
-        tgt_mapset.current()
+
+        # we need to make the mapset change in the current GISRC (tgt)
+        # note that the C library for this process still holds the
+        # path to the old GISRC file (src)
+        set_current_mapset(tgt_gisdbase, tgt_location, tgt_mapset_name,
+                           gisrc=tgt_gisrc)
 
         # setting region
         if use_region:
@@ -193,7 +194,8 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
         if old_temp_region:
             os.environ['WIND_OVERRIDE'] = old_temp_region
         # set current in library
-        src_mapset.current()
+        set_current_mapset(src_mapset.gisdbase, src_mapset.location,
+                           src_mapset.name, gisrc=src_gisrc)
 
         # delete the whole gisdbase
         # delete file by file to ensure that we are deleting only our things
