@@ -21,9 +21,11 @@ def get_region():
     """
     gregion_out = gcore.read_command('g.region', flags='pg')
     region = gcore.parse_key_val(gregion_out, sep='=')
-    return {'east': region['e'], 'north': region['n'],
-            'west': region['w'], 'south': region['s'],
-            'rows': region['rows'], 'cols': region['cols']}
+    return {'east': float(region['e']), 'north': float(region['n']),
+            'west': float(region['w']), 'south': float(region['s']),
+            'rows': int(region['rows']), 'cols': int(region['cols']),
+            'nsres': float(region['nsres']),
+            'ewres': float(region['ewres'])}
 
 
 def set_region(region):
