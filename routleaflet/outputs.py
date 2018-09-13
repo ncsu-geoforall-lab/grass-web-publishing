@@ -11,17 +11,20 @@ import grass.script.core as gcore
 
 
 def _setEnvironment(width, height, filename, transparent,
-                    backgroud_color='ffffff', driver='cairo'):
-    os.environ['GRASS_WIDTH'] = str(width)
-    os.environ['GRASS_HEIGHT'] = str(height)
+                    backgroud_color='ffffff', driver='cairo',
+                    compression=None):
+    os.environ['GRASS_RENDER_WIDTH'] = str(width)
+    os.environ['GRASS_RENDER_HEIGHT'] = str(height)
     os.environ['GRASS_RENDER_IMMEDIATE'] = driver
-    os.environ['GRASS_BACKGROUNDCOLOR'] = backgroud_color
-    os.environ['GRASS_TRUECOLOR'] = "TRUE"
+    os.environ['GRASS_RENDER_BACKGROUNDCOLOR'] = backgroud_color
+    os.environ['GRASS_RENDER_TRUECOLOR'] = "TRUE"
     if transparent:
-        os.environ['GRASS_TRANSPARENT'] = "TRUE"
+        os.environ['GRASS_RENDER_TRANSPARENT'] = "TRUE"
     else:
-        os.environ['GRASS_TRANSPARENT'] = "FALSE"
-    os.environ['GRASS_PNGFILE'] = str(filename)
+        os.environ['GRASS_RENDER_TRANSPARENT'] = "FALSE"
+    if compression:
+        os.environ['GRASS_RENDER_FILE_COMPRESSION'] = str(compression)
+    os.environ['GRASS_RENDER_FILE'] = str(filename)
 
 
 def _read2_command(*args, **kwargs):
