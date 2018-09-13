@@ -30,14 +30,6 @@ def set_rendering_environment(width, height, filename, transparent,
     env['GRASS_RENDER_FILE'] = str(filename)
 
 
-def _read2_command(*args, **kwargs):
-    kwargs['stdout'] = gs.PIPE
-    kwargs['stderr'] = gs.PIPE
-    ps = gs.start_command(*args, **kwargs)
-    stdout, stderr = ps.communicate()
-    return ps.returncode, stdout, stderr
-
-
 def export_legend(mapname, filename, width, height):
     # using png driver but need to set bg color if we want transparency
     # otherwise png driver will set pixels to ffffff and PIL will
@@ -45,8 +37,7 @@ def export_legend(mapname, filename, width, height):
     set_rendering_environment(width, height, filename, transparent=True,
                               backgroud_color='000000',
                               driver='png')
-    returncode, stdout, messages = _read2_command('d.legend',
-                                                  rast=mapname)
+    gs.run_command('d.legend', raster=mapname)
     try:
         from PIL import Image
         image = Image.open(filename)
@@ -63,8 +54,7 @@ def export_histogram(mapname, filename, width, height, style='bar'):
     # using png driver to be sure that it works for ms windows
     set_rendering_environment(width, height, filename, transparent=True,
                               driver='png')
-    returncode, stdout, messages = _read2_command('d.histogram',
-                                                  map=mapname, style=style)
+    gs.run_command('d.histogram', map=mapname, style=style)
 
 
 def export_info(mapname, filename):
