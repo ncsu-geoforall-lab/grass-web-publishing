@@ -74,3 +74,41 @@ def reproject_region(region, from_proj, to_proj):
     region['west'] = wlon
     region['south'] = slat
     return region
+
+
+def read_env_file(filename):
+    keyval = {}
+    with open(filename, 'r') as file:
+        for line in file:
+            # TODO: to generalize, add error handling
+            key, value = line.split(':', 1)
+            keyval[key.strip()] = value.strip()
+    return keyval
+
+
+def write_env_file(keyval, filename):
+    # if this is interrupted, file may be broken
+    # (see C implementation (which is not as general as this one))
+    # theoretically, this could be solved by generalized g.gisenv
+    with open(filename, 'w') as file:
+        for key, value in keyval.items():
+            file.write("%s: %s\n" % (key, value))
+
+
+def set_current_mapset(dbase, location, mapset, gisrc=None, env=None):
+    """Sets the current mapset in the ``gisrc`` file.
+
+    If ``gisrc`` is not provided, environment variable ``GISRC`` is
+    used. The ``env`` parameter can be used to override the system
+    (global) environment.
+    """
+    if not gisrc:
+        if env:
+            gisrc = env['GISRC']
+        else:
+            gisrc = os.environ['GISRC']
+    gisenv = read_env_file(gisrc)
+    gisenv['GISDBASE'] = dbase
+    gisenv['LOCATION_NAME'] = location
+    gisenv['MAPSET'] = mapset
+    write_env_file(gisenv, gisrc)
