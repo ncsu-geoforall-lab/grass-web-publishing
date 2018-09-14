@@ -200,17 +200,19 @@ def export_png_in_projection(src_mapset_name, map_name, output_file,
             gs.run_command('g.region', **a)
 
         # map import
+        gs.message("Reprojecting...")
         gs.run_command('r.proj', input=map_name, dbase=src_mapset.database,
                        location=src_mapset.location, mapset=src_mapset.name,
-                       output=map_name)
+                       output=map_name, quiet=True)
 
         # actual export
+        gs.message("Rendering...")
         raster_to_png(map_name, output_file, compression=compression,
                       routpng_flags=routpng_flags)
 
         # outputting file with WGS84 coordinates
         if wgs84_file:
-            gs.message("Projecting coordinates to LL WGS 84...")
+            gs.verbose("Projecting coordinates to LL WGS 84...")
             with open(wgs84_file, 'w') as data_file:
                 if use_region:
                     # map which is smaller than region is imported in its own
