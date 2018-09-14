@@ -30,7 +30,6 @@ def get_region():
 
 def set_region(region):
     region = copy.copy(region)
-    print region
     region['n'] = region['north']
     region['s'] = region['south']
     region['e'] = region['east']
@@ -50,9 +49,7 @@ def get_location_proj_string():
 # TODO: this does not take care of resolution (it's just extent)
 def reproject_region(region, from_proj, to_proj):
     region = copy.copy(region)
-    print "to reproject:", region
     proj_input = '{east} {north}\n{west} {south}'.format(**region)
-    print proj_input
     proc = gs.start_command('m.proj', input='-', separator=' , ',
                             proj_in=from_proj, proj_out=to_proj,
                             stdin=gs.PIPE, stdout=gs.PIPE, stderr=gs.PIPE)
@@ -61,11 +58,8 @@ def reproject_region(region, from_proj, to_proj):
     proc.stdin = None
     proj_output, stderr = proc.communicate()
     if proc.returncode:
-        print from_proj, to_proj, proj_input
         raise RuntimeError("reprojecting region: m.proj error: " + stderr)
     enws = proj_output.split(os.linesep)
-    print proj_output
-    print enws
     elon, nlat, unused = enws[0].split(' ')
     wlon, slat, unused = enws[1].split(' ')
     region['east'] = elon

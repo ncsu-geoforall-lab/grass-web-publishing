@@ -6,7 +6,7 @@
 # AUTHOR(S):    Vaclav Petras
 # PURPOSE:      Outputs raster maps prepared for a Leaflet web map
 #
-# COPYRIGHT:    (C) 2013 by the GRASS Development Team
+# COPYRIGHT:    (C) 2013-2018 by Vaclav Petras and the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with GRASS

@@ -6,7 +6,7 @@
 # AUTHOR(S):    Vaclav Petras
 # PURPOSE:      Outputs a raster map as an PNG image in specified location
 #
-# COPYRIGHT:    (C) 2013 by the GRASS Development Team
+# COPYRIGHT:    (C) 2013-2018 by Vaclav Petras and the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with GRASS

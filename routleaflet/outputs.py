@@ -68,7 +68,6 @@ def export_statistics(mapname, filename):
 
 
 def thumbnail_image(input_file, output_file):
-    print input_file, output_file
     try:
         import Image
         image = Image.open(input_file)
@@ -76,8 +75,7 @@ def thumbnail_image(input_file, output_file):
         image.save(output_file, 'PNG')
     except ImportError, error:
         gs.warning(_("Cannot thumbnail image ({error})."
-                     " Maybe you don't have PIL."
-                     " Will output the same image.") % error)
+                     " Maybe you don't have PIL.") % error)
 
 
 def export_raster_as_geotiff(mapname, filename):
