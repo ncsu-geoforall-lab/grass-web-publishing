@@ -16,8 +16,7 @@ import grass.script as gs
 def get_region():
     """Returns current computational region as dictionary.
 
-    Uses standardized key names. Outputs only 2D region values which are usable
-    for conversion to another location.
+    Adds long key names.
     """
     region = gs.region()
     region['east'] = region['e']
@@ -28,6 +27,11 @@ def get_region():
 
 
 def set_region(region):
+    """Sets the current computational region from a dictionary.
+
+    Accepts long key names and removes key from ``grass.script.region()``
+    which are not useful for setting the region.
+    """
     region = copy.copy(region)
     if 'north' in region:
         # just assuming all
@@ -35,9 +39,8 @@ def set_region(region):
         region['s'] = region['south']
         region['e'] = region['east']
         region['w'] = region['west']
-    #for key in ['nsres', 'ewres']:
-    #    new[key] = region[key]
-    for key in ['north', 'south', 'east', 'west', 'zone', 'projection', 'cells']:
+    for key in ['north', 'south', 'east', 'west',
+                'zone', 'projection', 'cells']:
         del region[key]
     gs.run_command('g.region', **region)
 
