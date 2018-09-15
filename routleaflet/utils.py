@@ -19,25 +19,26 @@ def get_region():
     Uses standardized key names. Outputs only 2D region values which are usable
     for conversion to another location.
     """
-    gregion_out = gs.read_command('g.region', flags='pg')
-    region = gs.parse_key_val(gregion_out, sep='=')
-    return {'east': float(region['e']), 'north': float(region['n']),
-            'west': float(region['w']), 'south': float(region['s']),
-            'rows': int(region['rows']), 'cols': int(region['cols']),
-            'nsres': float(region['nsres']),
-            'ewres': float(region['ewres'])}
+    region = gs.region()
+    region['east'] = region['e']
+    region['west'] = region['w']
+    region['north'] = region['n']
+    region['south'] = region['s']
+    return region
 
 
 def set_region(region):
     region = copy.copy(region)
-    region['n'] = region['north']
-    region['s'] = region['south']
-    region['e'] = region['east']
-    region['w'] = region['west']
-    del region['north']
-    del region['south']
-    del region['east']
-    del region['west']
+    if 'north' in region:
+        # just assuming all
+        region['n'] = region['north']
+        region['s'] = region['south']
+        region['e'] = region['east']
+        region['w'] = region['west']
+    #for key in ['nsres', 'ewres']:
+    #    new[key] = region[key]
+    for key in ['north', 'south', 'east', 'west', 'zone', 'projection', 'cells']:
+        del region[key]
     gs.run_command('g.region', **region)
 
 
