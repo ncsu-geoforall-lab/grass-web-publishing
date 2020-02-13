@@ -44,7 +44,7 @@ def export_legend(mapname, filename, width, height):
         imageBox = image.getbbox()
         cropped_image = image.crop(imageBox)
         cropped_image.save(filename, 'PNG')
-    except ImportError, error:
+    except ImportError as error:
         gs.warning(_("Cannot crop legend image ({error})."
                      " Maybe you don't have PIL."
                      " Uncropped legend image will be used.") % error)
@@ -73,7 +73,7 @@ def thumbnail_image(input_file, output_file):
         image = Image.open(input_file)
         image.thumbnail((200, 200), Image.ANTIALIAS)
         image.save(output_file, 'PNG')
-    except ImportError, error:
+    except ImportError as error:
         gs.warning(_("Cannot thumbnail image ({error})."
                      " Maybe you don't have PIL.") % error)
 
